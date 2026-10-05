@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>AI 流式测试</title>
+</head>
+<body>
+<h2>AI 流式输出测试</h2>
+<input type="text" id="question" value="用一句话解释RAG" style="width: 300px; padding: 5px;">
+<button id="askBtn">提问</button>
+<span id="status" style="color: #888; margin-left: 8px;"></span>
+<div id="output" style="border: 1px solid #ccc; padding: 10px; margin-top: 10px; min-height: 100px; white-space: pre-wrap;"></div>
+
+<script>
+    // 这个页面有三种可能的打开方式，它们决定了 "/api/chat/stream" 会打到哪台服务器：
+    //   1) http://localhost:8080/test-stream.html  —— 后端自己提供的页面，同源，最省事（推荐）
+    //   2) 直接双击 html 文件（file://）           —— 相对路径会变成 file:///api/chat/stream，必然失败
+    //   3) IDEA 内置服务器预览（localhost:63342）  —— 相对路径会打到 IDEA 的静态服务器，同样失败
+    // 所以这里显式算出后端地址：只有确认页面来自后端时才算同源，否则一律指向 8080。
+    // 后端换了端口时，可以用 ?api=http://localhost:8081 覆盖。
+    const API_BASE = new URLSearchParams(location.search).get('api')
+        || ((location.protocol.startsWith('http') && location.port !== '63342')
+            ? location.origin
+            : 'http://localhost:8080');
+
+    let eventSource = null;
+    let received = false;
+
+    function startStream() {
+        const question = document.getElementById('question').value.trim();
+        const output = document.getElementById('output');
+        const status = document.getElementById('status');
+
+        if (!question) {
+            status.textContent = '请先输入问题';
+            return;
+        }
+        // 上一次连接没关干净的话先关掉，避免两个流同时往同一个框里写
+        if (eventSource) {
+            eventSource.close();
+        }
+
+        output.textContent = '';
+        received = false;
+        status.textContent = '连接中…';
+
+        // 用 encodeURIComponent 处理中文，防止乱码
+        const url = API_BASE + '/api/chat/stream?message=' + encodeURIComponent(question);
+        eventSource = new EventSource(url);
+
+        eventSource.onopen = function () {
+            status.textContent = '已连接，正在生成…';
+        };
+
+        eventSource.onmessage = function (event) {
+            received = true;
+            output.textContent += event.data;
+        };
+
+        // 注意：onerror 在「连接失败」和「服务端把流正常关闭」两种情况下都会触发，
+        // 所以必须靠 received 区分，否则连不上时会假装成「回答结束」，让人以为模型答完了。
+        eventSource.onerror = function () {
+            eventSource.close();
+            eventSource = null;
+
+            if (received) {
+                status.textContent = '回答结束';
+                return;
+            }
+
+            status.textContent = '';
+            output.textContent =
+                '一个字都没收到，连接失败了。\n'
+                + '实际请求地址：' + url + '\n'
+                + '排查顺序：\n'
+                + '  1. Spring Boot 是否已启动（后端日志里要有 Tomcat started on port 8080）\n'
+                + '  2. 页面是否用 ' + API_BASE + '/test-stream.html 打开的\n'
+                + '  3. 浏览器 F12 → Network 里那条 stream 请求的状态码是多少（404 说明打到了别的服务器，500 看后端日志）';
+        };
+    }
+
+    document.getElementById('askBtn').addEventListener('click', startStream);
+    document.getElementById('question').addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            startStream();
+        }
+    });
+</script>
+</body>
+</html>

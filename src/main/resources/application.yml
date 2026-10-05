@@ -1,0 +1,12 @@
+
+spring:
+  ai:
+    openai:
+      # 密钥不写进代码：本地把 DEEPSEEK_API_KEY 配成环境变量即可
+      # （IDEA：Run/Debug Configurations → Environment variables 里加一条）
+      # 冒号后面留空表示没配也能启动，只是调用时报鉴权错误，方便排查
+      api-key: ${DEEPSEEK_API_KEY:}
+      base-url: ${OPENAI_BASE_URL:https://api.deepseek.com}
+      chat:
+        options:
+          model: deepseek-chat
