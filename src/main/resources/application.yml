@@ -1,17 +1,47 @@
-
 spring:
   ai:
+    # ⚠️ 重要：Spring AI 2.0.0 里这段配置【管不到】OpenAI/DeepSeek 的对话调用。
+    # 2.0.0 的 OpenAI 集成改用官方 openai-java SDK，重试由 SDK 自己做，
+    # 对应开关是下面的 spring.ai.openai.chat.max-retries。
+    # 这里的 spring.ai.retry.* 仍然会创建一个 Spring 的 RetryTemplate Bean，
+    # 供其它走 RestClient/WebClient 的模型使用，但对 chat 这条链路不生效。
+    # 想验证：把 max-attempts 改成 1 或 10，401 时的请求次数不变（因为 401 本来就不重试）。
+    retry:
+      max-attempts: 4
+      backoff:
+        initial-interval: 2000ms
+        multiplier: 2
+        max-interval: 10000ms
+      # 不对 400/401/403 重试（这类错误重试多少次都一样，纯浪费额度和时间）
+      exclude-on-http-codes:
+        - 400
+        - 401
+        - 403
+      # 只对 429（限流）和 500（服务端错误）重试
+      on-http-codes:
+        - 429
+        - 500
+
     openai:
-      # 密钥不写进代码：本地把 DEEPSEEK_API_KEY 配成环境变量即可
+      # 密钥不写进代码：本地把 OPENAI_API_KEY 配成环境变量即可
       # （IDEA：Run/Debug Configurations → Environment variables 里加一条）
-      # 冒号后面留空表示没配也能启动，只是调用时报鉴权错误，方便排查
-      api-key: ${DEEPSEEK_API_KEY:}
+      # 优先读 OPENAI_API_KEY，没配就回退到 DEEPSEEK_API_KEY（照顾旧配置）
+      # 两个都没配也能启动，只是调用时返回 401，便于排查
+      api-key: ${OPENAI_API_KEY:${DEEPSEEK_API_KEY:}}
       base-url: ${OPENAI_BASE_URL:https://api.deepseek.com}
       chat:
+        # 真正生效的重试次数（SDK 侧，默认就是 3）：
+        # SDK 只对可重试的响应重试（429/408/409/5xx），401/403 天然不重试
+        max-retries: 3
         options:
           model: deepseek-chat
+      http:
+        client:
+          connection-timeout: 10s
+          read-timeout: 60s
+
 logging:
   level:
-    com.openai: DEBUG
-    okhttp3: DEBUG
+    org.springframework.ai: DEBUG
+    org.springframework.ai.chat.client.advisor: DEBUG  # SimpleLoggerAdvisor 的 Prompt/Response 日志
     reactor.netty: DEBUG
