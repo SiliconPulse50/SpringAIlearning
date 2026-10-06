@@ -10,3 +10,8 @@ spring:
       chat:
         options:
           model: deepseek-chat
+logging:
+  level:
+    com.openai: DEBUG
+    okhttp3: DEBUG
+    reactor.netty: DEBUG
