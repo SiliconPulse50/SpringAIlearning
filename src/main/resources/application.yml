@@ -1,4 +1,8 @@
 spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/springai     # ← 你的库名是 springai
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
   ai:
     # ⚠️ 重要：Spring AI 2.0.0 里这段配置【管不到】OpenAI/DeepSeek 的对话调用。
     # 2.0.0 的 OpenAI 集成改用官方 openai-java SDK，重试由 SDK 自己做，
@@ -22,6 +26,13 @@ spring:
         - 429
         - 500
 
+    vectorstore:
+      pgvector:
+        initialize-schema: true
+        dimensions: 1024            # ← 必须与上面那行一模一样
+        index-type: HNSW
+        distance-type: COSINE_DISTANCE
+
     openai:
       # 密钥不写进代码：本地把 OPENAI_API_KEY 配成环境变量即可
       # （IDEA：Run/Debug Configurations → Environment variables 里加一条）
@@ -35,10 +46,18 @@ spring:
         max-retries: 3
         options:
           model: deepseek-chat
+      embedding: # 新增：embedding  百炼
+        api-key: ${DASHSCOPE_API_KEY:}
+        base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+        model: text-embedding-v4
+        options:
+          dimensions: 1024
       http:
         client:
           connection-timeout: 10s
           read-timeout: 60s
+
+
 
 logging:
   level:
