@@ -1,8 +1,6 @@
 package com.example.ragdemo.controller;
 
-import com.example.ragdemo.Service.RagService;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
+import com.example.ragdemo.service.RagService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -28,6 +26,7 @@ public class RagController {
     public String ask(@RequestParam String question) {
         return ragService.ask(question);
     }
+    /* 文件入库 */
     @PostMapping("/ingest")
     public String ingest(@RequestParam("file") MultipartFile file) {
         System.out.println("收到文件：" + file.getOriginalFilename() + "，大小 " + file.getSize() + " 字节");

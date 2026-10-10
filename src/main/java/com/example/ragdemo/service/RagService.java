@@ -1,4 +1,4 @@
-package com.example.ragdemo.Service;
+package com.example.ragdemo.service;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
@@ -48,14 +48,14 @@ public class RagService {
    读文件入库，参数用resource 而不是MultipartFile ,让service不依赖web层
     */
     public int ingest(Resource resource) {
-        // Extract
+        // Extract同一个类型的List<Documents>一直传下去
         List<Document> documents = new TikaDocumentReader(resource).read();
 
-        // ★ 最关键的一行：确认"到底读到字了没有"
+        // 最关键的一行：确认"到底读到字了没有"
+        //源码里面：Map <String,Object> 取值 ->返回值类型是 Object 拼字符串自动toString()
         documents.forEach(d -> System.out.println(
                 "读取到 " + d.getText().length() + " 字符, source="
-                        + d.getMetadata().get(TikaDocumentReader.METADATA_SOURCE)));
-
+                + d.getMetadata().get(TikaDocumentReader.METADATA_SOURCE)));
         // Transform
         List<Document> chunks = TokenTextSplitter.builder().build().apply(documents);
 
@@ -63,7 +63,7 @@ public class RagService {
         for (int i = 0; i < chunks.size(); i += BATCH) {
             vectorStore.add(chunks.subList(i, Math.min(i + BATCH, chunks.size())));
         }
-
+        //文件入库完成
         System.out.println("文件入库完成：切成 " + chunks.size() + " 块");
         return chunks.size();
     }
@@ -80,7 +80,7 @@ public class RagService {
 
         // 2. 把命中结果打出来
         hits.forEach(d -> System.out.println(
-                "[" + d.getScore() + "] " + d.getText().substring(0, Math.min(60, d.getText().length()))));
+                "score:[" + d.getScore() + "] " + d.getText().substring(0, Math.min(60, d.getText().length()))));
 
         if (hits.isEmpty()) {
             return "没有检索到相关内容,向量库里可能还没有数据";
@@ -91,7 +91,7 @@ public class RagService {
                 .map(Document::getText)                    // ← 不是 getContent spring 2.0 已没有这个方法
                 .collect(Collectors.joining("\n\n---\n\n"));
 
-        // 4. 组装 prompt 并调用
+        // 4. 组装 prompt 并调用，RAG的prompt模板，结尾。formatted (context,question)
         return chatClient.prompt()
                 .user("""
                     请根据以下参考资料回答问题。
