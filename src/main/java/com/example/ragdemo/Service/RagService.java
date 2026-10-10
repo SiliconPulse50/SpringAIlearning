@@ -3,9 +3,11 @@ package com.example.ragdemo.Service;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.reader.tika.TikaDocumentReader;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -42,6 +44,29 @@ public class RagService {
         return chunks.size();
     }
 
+   /*
+   读文件入库，参数用resource 而不是MultipartFile ,让service不依赖web层
+    */
+    public int ingest(Resource resource) {
+        // Extract
+        List<Document> documents = new TikaDocumentReader(resource).read();
+
+        // ★ 最关键的一行：确认"到底读到字了没有"
+        documents.forEach(d -> System.out.println(
+                "读取到 " + d.getText().length() + " 字符, source="
+                        + d.getMetadata().get(TikaDocumentReader.METADATA_SOURCE)));
+
+        // Transform
+        List<Document> chunks = TokenTextSplitter.builder().build().apply(documents);
+
+        // Load（和 3.1 一样分批）
+        for (int i = 0; i < chunks.size(); i += BATCH) {
+            vectorStore.add(chunks.subList(i, Math.min(i + BATCH, chunks.size())));
+        }
+
+        System.out.println("文件入库完成：切成 " + chunks.size() + " 块");
+        return chunks.size();
+    }
 
     public String ask(String question) {
         // 1. 检索

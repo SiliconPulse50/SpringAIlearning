@@ -4,6 +4,7 @@ import com.example.ragdemo.Service.RagService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/rag")
@@ -26,5 +27,10 @@ public class RagController {
     @GetMapping("/ask")
     public String ask(@RequestParam String question) {
         return ragService.ask(question);
+    }
+    @PostMapping("/ingest")
+    public String ingest(@RequestParam("file") MultipartFile file) {
+        System.out.println("收到文件：" + file.getOriginalFilename() + "，大小 " + file.getSize() + " 字节");
+        return "已入库 " + ragService.ingest(file.getResource()) + " 个块";
     }
 }
