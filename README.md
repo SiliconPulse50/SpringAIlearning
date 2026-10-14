@@ -28,9 +28,9 @@
 |---|---|
 | 来源 1 | Spring AI 官方文档 `v2.0.0` tag，仓库 `spring-ai-docs/src/main/antora/modules/ROOT/pages` |
 | 来源 2 | 我自己的学习笔记 ___ 份 |
-| 文档数 | 官方 ___ 份 `.adoc` + 笔记 ___ 份 |
-| 总字数 | 约 ___ 万字 |
-| 分块数 | ___ 个块（`vector_store` 表行数） |
+| 文档数 | 官方 115 份 `.adoc` + 笔记 ___ 份 |
+| 总字数 | 约 172 万字 |
+| 分块数 | 预估500-700 个块（`vector_store` 表行数） |
 | 更新方式 | `git pull` 拉新文档 → 按 `source` 先删后插（幂等），不产生重复 |
 | 分类字段 | `category` = `official` / `notes`（检索时可用元数据过滤限定范围）|
 | 版本字段 | `version` = `v2.0.0`（**锁定版本，保证评测结果可复现**）|
