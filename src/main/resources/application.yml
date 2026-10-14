@@ -62,8 +62,16 @@ spring:
         client:
           connection-timeout: 10s
           read-timeout: 60s
-
-
+rag:
+  # 数据根目录环境变量
+  docs-root: ${RAG_DOCS_ROOT:D:/springaidata/docs}
+  # 每批次送多少条给embedding(百炼单次条数有上限)
+  batch-size: 10
+  # 分块粒度 token
+  chunk-size: 800
+  # 检索默认条数与阈值
+  top-k: 5
+  similarity-threshold: 0.0
 
 logging:
   level:

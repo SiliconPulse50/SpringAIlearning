@@ -1,8 +1,12 @@
 package com.example.ragdemo.controller;
 
+import com.example.ragdemo.service.IngestRecord;
 import com.example.ragdemo.service.RagService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+
 
 @RestController
 @RequestMapping("/api/rag")
@@ -32,4 +36,9 @@ public class RagController {
         System.out.println("收到文件：" + file.getOriginalFilename() + "，大小 " + file.getSize() + " 字节");
         return "已入库 " + ragService.ingest(file.getResource()) + " 个块";
     }
+    @PostMapping("/ingest-dir")
+    public List<IngestRecord> ingestDir(@RequestParam("path") String path) {
+        return ragService.ingestDirectory(path);
+    }
+
 }
